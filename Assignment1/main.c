@@ -38,16 +38,16 @@ int64_t getDiffTime (struct timespec startTume, struct timespec endTime)
 
 void checkCorExTime(CoroInfo* coroInfo)
 {
-	int64_t gotTime = getDiffTime(coroInfo->startTime, getCurTime());
+	struct timespec curTime = getCurTime(); 
+	coroInfo->totalTime += getDiffTime(coroInfo->lastCheckedTime, curTime);
+	coroInfo->lastCheckedTime = curTime;
+
+	int64_t gotTime = getDiffTime(coroInfo->startTime, curTime);
+	
 	if (gotTime > maxTimePerCor) {
-		coroInfo->totalTime += gotTime;
 		coroInfo->switchNum ++;
 		coro_yield();
 		clock_gettime(CLOCK_MONOTONIC, &coroInfo->startTime);
-	} else {
-		struct timespec curTime = getCurTime(); 
-		coroInfo->totalTime += getDiffTime(coroInfo->lastCheckedTime, curTime);
-		coroInfo->lastCheckedTime = curTime;
 	}
 }
 
@@ -106,7 +106,6 @@ void heapSort (MyVector* myVector, CoroInfo* coroInfo) {
     }
 
 	checkCorExTime(coroInfo);
-	
 }
 
 static int
@@ -142,7 +141,8 @@ coroutine_func_f(void *context)
 		myVectors[sorted_files++] = V;
 		clock_gettime(CLOCK_MONOTONIC, &coroInfo->startTime);
 		heapSort(V, coroInfo);
-
+		checkCorExTime(coroInfo);
+		
 		file = fopen(name_of_file, "w");
 		for (int i = 0; i < size(V); ++i) {
 			fprintf(file, "%d ", get(V, i));
@@ -177,7 +177,7 @@ main(int argc, char **argv)
 		}
 
 		if (latency < numbOfCors) {
-			printf("Time distributed between coroutines by given latency is less that one milisecond\n");
+			printf("Time distributed between coroutines by given latency is less that one microsecond\n");
 			printf("Please chose latency that is bigger than number of coroutines\n");
 			return 1;
 		}

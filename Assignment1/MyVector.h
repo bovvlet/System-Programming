@@ -15,6 +15,8 @@ MyVector* new_vector() {
 	obj->sz = 0;
 	obj->max_sz = 4;
 	obj->arr = malloc(sizeof(int) * 4);
+
+	return obj;
 }
 
 void push_back(MyVector* myVector, int x) {
